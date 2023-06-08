@@ -1,0 +1,8 @@
+__pycache__
+*.pyc
+package.json
+.vscode
+tags
+.idea
+data
+demo_out.ipynb
