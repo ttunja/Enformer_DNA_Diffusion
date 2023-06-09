@@ -1,0 +1,14 @@
+__pycache__
+*.pyc
+package.json
+.vscode
+tags
+.idea
+data
+demo_out.ipynb
+*.TXT
+*.bw
+/enformer_dna_diff/real_main_script.py
+/enformer_dna_diff/main_script.py
+build
+*info
