@@ -12,4 +12,5 @@ setup(
     author="Tin M. Tunjic",
     author_email="tunjictin@gmail.com",
     description="This is a package for that combines DeepMind Enformer model with DNA Diffusion project",
+    url="https://github.com/ttunja/Enformer_DNA_Diffusion.git"
 )
