@@ -1,3 +1,15 @@
+import tensorflow_hub as hub
+import joblib
+import kipoiseq
+from kipoiseq import Interval
+import pyBigWig
+import pyfaidx
+import pandas as pd
+import numpy as np
+import tensorflow as tf
+from utils import one_hot_encode
+from enformer import FastaStringExtractor
+
 # EnformerOps
 class EnformerOps:
     def __init__(self):
@@ -8,6 +20,7 @@ class EnformerOps:
         self.full_generated_range_start = None
         self.full_generated_range_end = None
         self.loaded_seqs = None
+        self.df_sizes = pd.read_table('data/hg38.chrom.sizes', header=None).head(22)
     
 
     def add_track(self, track):
@@ -30,12 +43,12 @@ class EnformerOps:
         """
 
         if type(track_key) == str:
-        self.tracks.remove(track_key)
-        elif type(track_key) == list:
-        for key in track_key:
             self.tracks.remove(track_key)
+        elif type(track_key) == list:
+            for key in track_key:
+                self.tracks.remove(track_key)
         else:
-        raise TypeError("track_key must be of type str or list")
+            raise TypeError("track_key must be of type str or list")
 
     def load_data(self, input_sequences_file_path):
       
@@ -45,6 +58,7 @@ class EnformerOps:
         
 
     def generate_plot_number(self, 
+                             model,
                              sequence_number_thousand, 
                              step=-1, 
                              interval_list=None,
@@ -52,7 +66,9 @@ class EnformerOps:
                              capture_bigwig_names=True,
                              wildtype=False,
                              insert_seq_directly=False,
-                             modify_prefix=''):
+                             modify_prefix='',
+                             fasta_file="data/genome.fa",
+                             sequence_length=393216):
         """
         Generates IGV tracks for a given sequence in a diffusion dataset.
 
@@ -88,17 +104,18 @@ class EnformerOps:
 
         target_interval = kipoiseq.Interval(USE_INTERVAL[0], USE_INTERVAL[1], USE_INTERVAL[2])
 
-        chr_test = target_interval.resize(SEQUENCE_LENGTH).chr
-        start_test = target_interval.resize(SEQUENCE_LENGTH).start
-        end_test = target_interval.resize(SEQUENCE_LENGTH).end
+        chr_test = target_interval.resize(sequence_length).chr
+        start_test = target_interval.resize(sequence_length).start
+        end_test = target_interval.resize(sequence_length).end
 
-        seq_to_mod = fasta_extractor.extract(target_interval.resize(SEQUENCE_LENGTH))
+        fasta_extractor = FastaStringExtractor(fasta_file)
+        seq_to_mod = fasta_extractor.extract(target_interval.resize(sequence_length))
 
         all_seqs_test = self.loaded_seqs[sequence_number_thousand]
 
 
         SEQ_IN = self.insert_seq(all_seqs_test[step], seq_to_mod, dont_insert=wildtype) # JUST THE LAST
-        predictions = self.predict_from_sequence(SEQ_IN)
+        predictions = self.predict_from_sequence(model, SEQ_IN)
 
         mod_start = int(start_test + ((end_test - start_test)/2)) - int(114688/2)
         mod_end = int(start_test + ((end_test - start_test)/2)) + int(114688/2)
@@ -182,7 +199,7 @@ class EnformerOps:
         return results
 
     @staticmethod
-    def predict_from_sequence(input_sequence):
+    def predict_from_sequence(model, input_sequence):
         sequence_one_hot = one_hot_encode(input_sequence)
         return model.predict_on_batch(sequence_one_hot[np.newaxis])['human'][0]
 
@@ -207,8 +224,7 @@ class EnformerOps:
 
         return ''.join(seq_to_mod_array)
 
-    @staticmethod
-    def _enformer_bigwig_creation(chr_name, start, values, track_name, color='BLUE'):
+    def _enformer_bigwig_creation(self, chr_name, start, values, track_name, color='BLUE'):
         """
         Creates a bigwig file for an Enformer track.
 
@@ -228,7 +244,7 @@ class EnformerOps:
         with open(t_name, 'w') as f:
             pass
         bw = pyBigWig.open(t_name, "w")
-        bw.addHeader([(chr_name, coord) for chr_name, coord in df_sizes.values])
+        bw.addHeader([(chr_name, coord) for chr_name, coord in self.df_sizes.values])
         values_conversion = (values * 1000 ).astype(np.int64) + 0.0
         bw.addEntries(chr_name, [start + (128 * x) for x in range(values_conversion.shape[0])], values=values_conversion, span=128)
 
@@ -262,7 +278,7 @@ class EnformerOps:
         with open(t_name, 'w') as f:
             pass
         bw = pyBigWig.open(t_name, "w")
-        bw.addHeader([(chr_name, coord) for chr_name, coord in df_sizes.values])
+        bw.addHeader([(chr_name, coord) for chr_name, coord in self.df_sizes.values])
         bw_cut = pyBigWig.open(filename, "r")
         values = np.array(bw_cut.values(chr_name, start, end))
         
@@ -290,7 +306,6 @@ class EnformerOps:
             return slices_position
 
     def generate_tiling(self, coord_to_tile, gata_gene_region):
-        df_sizes = pd.read_table('data/hg38.chrom.sizes', header=None).head(22)
         tiling_coords = self.tiling(coord_to_tile, window=2000)
         regions_capture = []
 
@@ -300,7 +315,7 @@ class EnformerOps:
         with open(t_name, 'w') as f:
             pass
         bw_insert = pyBigWig.open(t_name, "w")
-        bw_insert.addHeader([(chr, coord) for chr, coord in df_sizes.values])
+        bw_insert.addHeader([(chr, coord) for chr, coord in self.df_sizes.values])
 
         for t in tqdm(tiling_coords):
             bw_list = self.generate_plot_number(120, 1, interval_list=t, show_track=False)
@@ -318,7 +333,7 @@ class SEQ_EXTRACT:
 
     def extract_seq (self, tag, cell_type):
         return self.data.query(f'TAG == "{tag}" and CELL_TYPE	 == "{cell_type}" ').copy()
+
     def __repr__(self):
         display(self.data.groupby(['TAG', 'CELL_TYPE']).count())
         return  'Data structure'
-        

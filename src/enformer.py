@@ -1,22 +1,8 @@
-import pandas as pd
-from IPython.display import HTML, display
 import tensorflow_hub as hub
 import joblib
-import gzip
 import kipoiseq
 from kipoiseq import Interval
 import pyfaidx
-import pyBigWig
-import igv_notebook
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import seaborn as sns
-import os 
-import pickle as pkl
-import wget 
-from tqdm import tqdm_notebook as tqdm
 import tensorflow as tf
 
 class Enformer:
@@ -35,7 +21,7 @@ class Enformer:
 
         target_mask_mass = tf.reduce_sum(target_mask)
         with tf.GradientTape() as tape:
-        tape.watch(input_sequence)
+            tape.watch(input_sequence)
         prediction = tf.reduce_sum(
             target_mask[tf.newaxis] *
             self._model.predict_on_batch(input_sequence)[output_head]) / target_mask_mass
@@ -65,7 +51,7 @@ class EnformerScoreVariantsNormalized:
         assert organism == 'human', 'Transforms only compatible with organism=human'
         self._model = EnformerScoreVariantsRaw(tfhub_url, organism)
         with tf.io.gfile.GFile(transform_pkl_path, 'rb') as f:
-        transform_pipeline = joblib.load(f)
+            transform_pipeline = joblib.load(f)
         self._transform = transform_pipeline.steps[0][1]  # StandardScaler.
         
     def predict_on_batch(self, inputs):
@@ -79,7 +65,7 @@ class EnformerScoreVariantsPCANormalized:
                 organism='human', num_top_features=500):
         self._model = EnformerScoreVariantsRaw(tfhub_url, organism)
         with tf.io.gfile.GFile(transform_pkl_path, 'rb') as f:
-        self._transform = joblib.load(f)
+            self._transform = joblib.load(f)
         self._num_top_features = num_top_features
         
     def predict_on_batch(self, inputs):

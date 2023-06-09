@@ -19,6 +19,8 @@ import pickle as pkl
 import wget 
 from tqdm import tqdm_notebook as tqdm
 import tensorflow as tf
+from enformer import Enformer, FastaStringExtractor
+from enformerops import EnformerOps, SEQ_EXTRACT
 
 
 model_path = 'https://tfhub.dev/deepmind/enformer/1'
@@ -31,64 +33,9 @@ df_sizes = pd.read_table('data/hg38.chrom.sizes', header=None).head(22)
 # Enformer TensorFlow base code
 SEQUENCE_LENGTH = 393216
 
-
-def variant_generator(vcf_file, gzipped=False):
-  """Yields a kipoiseq.dataclasses.Variant for each row in VCF file."""
-  def _open(file):
-    return gzip.open(vcf_file, 'rt') if gzipped else open(vcf_file)
-    
-  with _open(vcf_file) as f:
-    for line in f:
-      if line.startswith('#'):
-        continue
-      chrom, pos, id, ref, alt_list = line.split('\t')[:5]
-      # Split ALT alleles and return individual variants as output.
-      for alt in alt_list.split(','):
-        yield kipoiseq.dataclasses.Variant(chrom=chrom, pos=pos,
-                                           ref=ref, alt=alt, id=id)
-
-
-def one_hot_encode(sequence):
-  return kipoiseq.transforms.functional.one_hot_dna(sequence).astype(np.float32)
-
-
-def variant_centered_sequences(vcf_file, sequence_length, gzipped=False,
-                               chr_prefix=''):
-  seq_extractor = kipoiseq.extractors.VariantSeqExtractor(
-    reference_sequence=FastaStringExtractor(fasta_file))
-
-  for variant in variant_generator(vcf_file, gzipped=gzipped):
-    interval = Interval(chr_prefix + variant.chrom,
-                        variant.pos, variant.pos)
-    interval = interval.resize(sequence_length)
-    center = interval.center() - interval.start
-
-    reference = seq_extractor.extract(interval, [], anchor=center)
-    alternate = seq_extractor.extract(interval, [variant], anchor=center)
-
-    yield {'inputs': {'ref': one_hot_encode(reference),
-                      'alt': one_hot_encode(alternate)},
-           'metadata': {'chrom': chr_prefix + variant.chrom,
-                        'pos': variant.pos,
-                        'id': variant.id,
-                        'ref': variant.ref,
-                        'alt': variant.alt}}
-def plot_tracks(tracks, interval, height=1.5, color='blue',set_y=False):
-    fig, axes = plt.subplots(len(tracks), 1, figsize=(20, height * len(tracks)), sharex=True)
-    for ax, (title, y) in zip(axes, tracks.items()):
-        ax.fill_between(np.linspace(interval.start, interval.end, num=len(y)), y, color=color)
-        ax.set_title(title)
-        sns.despine(top=True, right=True, bottom=True)
-    ax.set_xlabel(str(interval))
-    #plt.tight_layout()
-    if set_y:
-        plt.ylim(set_y[0],set_y[1])
 model = Enformer(model_path)
 
 fasta_extractor = FastaStringExtractor(fasta_file)
-
-import pandas as pd
-from IPython.display import HTML, display
 
 
 def main():
@@ -199,8 +146,9 @@ def main():
         try:
             s_in = [s[0], int(s[1]), int(s[2])]
             id_seq = s[3] 
-            list_bw = eops.generate_plot_number(0, interval_list=s_in, wildtype=True, 
-                                            show_track=False, modify_prefix=MODIFY_PREFIX) 
+            list_bw = eops.generate_plot_number(model, 0, interval_list=s_in, wildtype=True, 
+                                            show_track=False, modify_prefix=MODIFY_PREFIX,
+                                            fasta_file=fasta_file, sequence_length=SEQUENCE_LENGTH) 
         except RuntimeError:
         # Infrequent "the entries are out of order" error for some random seqs 
             continue
@@ -247,7 +195,7 @@ def main():
         try:
             s_in = [s[0], int(s[1]), int(s[2])]
             id_seq = s[3] 
-            list_bw = eops.generate_plot_number(0, interval_list=s_in, wildtype=True, 
+            list_bw = eops.generate_plot_number(model, 0, interval_list=s_in, wildtype=True, 
                                             show_track=False, modify_prefix=MODIFY_PREFIX) 
         except RuntimeError:
         # Infrequent "the entries are out of order" error for some random seqs 
@@ -259,7 +207,7 @@ def main():
             out_in['SEQ_ID'] = id_seq
             out_in['TARGET_NAME'] = 'ITSELF'
             columns_names = out_in.copy()
-            captured_values.append( out_in  )
+            captured_values.append(out_in)
         except ValueError:
         # Infrequent "All arrays must be of the same length" error
             continue
@@ -287,7 +235,7 @@ def main():
         try:
             s_in = [s[0], int(s[1]), int(s[2])]
             id_seq = s[3] 
-            list_bw = eops.generate_plot_number(0, interval_list=s_in, wildtype=True, 
+            list_bw = eops.generate_plot_number(model, 0, interval_list=s_in, wildtype=True, 
                                             show_track=False, modify_prefix=MODIFY_PREFIX) 
         except RuntimeError:
         # Infrequent "the entries are out of order" error for some random seqs 
@@ -338,7 +286,7 @@ def main():
             id_seq = s[0]   # aways inject a sequence
             #print (id_seq)
             eops.load_data([[id_seq]]) # This will be always zero (sequence passed using insert_seq_directly)
-            list_bw = eops.generate_plot_number(-1, interval_list=ENHANCER_REGION, wildtype=False, 
+            list_bw = eops.generate_plot_number(model, -1, interval_list=ENHANCER_REGION, wildtype=False, 
                                             show_track=False, modify_prefix=MODIFY_PREFIX) 
         except RuntimeError:
         # Infrequent "the entries are out of order" error for some random seqs 
@@ -373,7 +321,6 @@ def main():
     df_out_ENH
     df_out_GENE
 
-
 if __name__=="__main__":
-    import ipdb; ipdb.set_trace()
+    # import ipdb; ipdb.set_trace()
     main()

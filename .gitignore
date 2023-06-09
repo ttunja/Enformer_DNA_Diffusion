@@ -6,3 +6,7 @@ tags
 .idea
 data
 demo_out.ipynb
+*.TXT
+*.bw
+/src/real_main_script.py
+/src/main_script.py
