@@ -4,7 +4,7 @@ from kipoiseq import Interval
 import pyfaidx
 import numpy as np
 import tensorflow as tf
-from enformer import FastaStringExtractor
+from .enformer import FastaStringExtractor
 
 def variant_generator(vcf_file, gzipped=False):
     """Yields a kipoiseq.dataclasses.Variant for each row in VCF file."""

@@ -8,5 +8,7 @@ data
 demo_out.ipynb
 *.TXT
 *.bw
-/src/real_main_script.py
-/src/main_script.py
+/enformer_dna_diff/real_main_script.py
+/enformer_dna_diff/main_script.py
+build
+*info

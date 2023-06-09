@@ -7,8 +7,8 @@ import pyfaidx
 import pandas as pd
 import numpy as np
 import tensorflow as tf
-from utils import one_hot_encode
-from enformer import FastaStringExtractor
+from .utils import one_hot_encode
+from .enformer import FastaStringExtractor
 
 # EnformerOps
 class EnformerOps:
