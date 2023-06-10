@@ -18,13 +18,13 @@ Alternatively, you can clone this repository and install the package locally. Fo
 Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/your-repository.git
+git clone https://github.com/ttunja/Enformer_DNA_Diffusion.git
 ```
 
 Navigate to the cloned repository:
 
 ```bash
-cd your-repository
+cd Enformer_DNA_Diffusion
 ```
 
 Install the package using pip:
