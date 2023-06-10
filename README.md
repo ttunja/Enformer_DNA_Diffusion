@@ -1,6 +1,7 @@
 # Enformer_DNA_Diffusion
 
 Enformer DNA Diff is a Python package that combines the DeepMind Enformer model with the DNA Diffusion project.
+This implementation was tested under Ubuntu 20.04, Python 3.8, Tensorflow 2.12, and CUDA 11.6. Versions of all dependencies can be found in requirements.txt.
 
 ## Installation
 
