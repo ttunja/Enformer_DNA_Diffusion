@@ -5,7 +5,7 @@ with open('requirements.txt') as f:
 # import ipdb;ipdb.set_trace()
 setup(
     name="enformer_dna_diff",
-    version="1.3",
+    version="1.4",
     packages=find_packages(),
     install_requires=required_libraries,
     scripts=['get_data.py'],
