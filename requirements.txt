@@ -20,7 +20,7 @@ contourpy==1.1.0
 cookiecutter==2.1.1
 cycler==0.11.0
 debugpy==1.6.7
-decorator==4.0.6
+decorator==5.1.1
 deprecation==2.1.0
 dm-tree==0.1.8
 etils==1.3.0
@@ -124,7 +124,7 @@ tqdm==4.65.0
 traitlets==5.9.0
 typing_extensions==4.6.3
 tzdata==2023.3
-urllib3==1.24.3
+urllib3==1.25
 wcwidth==0.2.6
 Werkzeug==2.3.6
 wget==3.2
